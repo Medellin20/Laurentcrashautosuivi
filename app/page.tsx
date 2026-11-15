@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ArrowRight, Check, Clock3, Copy, MapPin, Package, Plus, Search, Settings2, ShieldCheck, Truck, X, LockKeyhole, LogOut } from 'lucide-react';
+import { ArrowRight, Check, Clock3, Copy, MapPin, Mail, Music2, Package, Plus, Search, Settings2, ShieldCheck, Truck, X, LockKeyhole, LogOut } from 'lucide-react';
 
 type Shipment = {
   id: string; tracking_code: string; reference: string; customer_name: string; customer_phone: string | null;
@@ -135,7 +135,7 @@ export function Home({ adminOnly = false }: { adminOnly?: boolean }) {
       <section className="noise relative overflow-hidden bg-[#111214] text-white">
         <div className="absolute -right-28 -top-40 h-[600px] w-[600px] rounded-full bg-[#e21c23]/20 blur-[120px]" />
         <div className="relative mx-auto grid max-w-[1320px] gap-12 px-5 pb-20 pt-16 lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:px-10 lg:pb-24 lg:pt-24">
-          <div className="animate-rise"><div className="mb-6 flex items-center gap-3 text-xs font-bold uppercase tracking-[.2em] text-[#ff4b50]"><span className="h-px w-8 bg-[#e21c23]" /> Transport automobile sécurisé</div>
+          <div className="animate-rise"><div className="mb-6 flex items-center gap-3 text-xs font-bold uppercase tracking-[.2em] text-[#ff4b50]">Transport automobile sécurisé</div>
             <h1 className="font-display max-w-xl text-5xl font-bold leading-[.98] tracking-[-.05em] sm:text-7xl">Votre véhicule,<br /><span className="text-[#e21c23]">à chaque étape.</span></h1>
             <p className="mt-7 max-w-lg text-base leading-7 text-white/60">Suivez l’avancement de votre transport en toute transparence. Entrez le code communiqué par notre équipe pour accéder à votre parcours.</p>
           </div>
@@ -151,7 +151,7 @@ export function Home({ adminOnly = false }: { adminOnly?: boolean }) {
       <section id="tracking-result" className="mx-auto max-w-[1320px] px-5 py-12 lg:px-10 lg:py-16">
         {!selected ? <div className="grid gap-5 md:grid-cols-3"><Feature icon={<MapPin />} title="Localisation claire" text="Chaque étape et chaque lieu sont indiqués simplement." /><Feature icon={<Clock3 />} title="Suivi actualisé" text="Les informations sont mises à jour par notre équipe logistique." /><Feature icon={<ShieldCheck />} title="Transport sécurisé" text="Votre véhicule est pris en charge par des professionnels." /></div> : <TrackingCard shipment={selected} events={selectedEvents} onCopy={copyCode} />}
       </section>
-      <footer className="border-t border-black/10 px-5 py-8 text-center text-xs text-black/40">© {new Date().getFullYear()} LC Laurent Crash Autos · Transport et logistique automobile</footer>
+      <SiteFooter />
     </> : adminOnly ? (authChecked && adminAuthenticated
       ? <AdminView shipments={shipments} events={events} stats={stats} loading={loading} onSelect={(shipment) => setSelected(shipment)} onStatus={updateStatus} onNew={() => setShowNew(true)} onCopy={copyCode} onLogOut={logOut} />
       : <AdminLogin checked={authChecked} password={adminPassword} setPassword={setAdminPassword} error={authError} onSubmit={logIn} />)
@@ -162,6 +162,42 @@ export function Home({ adminOnly = false }: { adminOnly?: boolean }) {
 }
 
 export default Home;
+
+function SiteFooter() {
+  const linkClass = 'block text-[15px] leading-6 text-[#777b82] transition hover:text-[#e21c23]';
+  return <footer className="border-t border-black/10 bg-[#fafafa] text-[#151619]">
+    <div className="mx-auto grid max-w-[1186px] gap-10 px-5 py-12 sm:grid-cols-2 lg:grid-cols-[2.1fr_1fr_1fr_1.3fr] lg:gap-14 lg:px-0 lg:py-12">
+      <div>
+        <a href="/" aria-label="LC Laurent Crash Autos, accueil" className="inline-flex w-[172px] items-center">
+          <img src="/laurent-logo-horizontal.png" alt="LC Laurent Crash Autos" className="h-auto w-full" />
+        </a>
+        <p className="mt-3 max-w-[310px] text-[15px] leading-6 text-[#777b82]">Véhicules accidentés à vendre en France et en Europe.</p>
+        <a href="https://www.tiktok.com/" aria-label="TikTok" className="mt-5 inline-flex h-[38px] w-[38px] items-center justify-center rounded-full border border-[#d9dce0] bg-white text-[#62666b] transition hover:border-[#e21c23] hover:text-[#e21c23]"><Music2 size={17} /></a>
+        <div className="mt-10">
+          <h2 className="mb-3 text-sm font-bold">Nous joindre</h2>
+          <ul className="space-y-2.5 text-[14px] text-[#777b82]">
+            <li className="flex items-center gap-3"><MapPin size={16} className="shrink-0 text-[#e21c23]" /><span>France métropolitaine</span></li>
+            <li className="flex items-center gap-3"><Mail size={16} className="shrink-0 text-[#e21c23]" /><a className="hover:text-[#e21c23]" href="mailto:contact@autoroyal.com">contact@autoroyal.com</a></li>
+            <li className="flex items-center gap-3"><Clock3 size={16} className="shrink-0 text-[#e21c23]" /><span>Lundi au samedi, 8h - 19h</span></li>
+          </ul>
+        </div>
+      </div>
+      <nav aria-label="Offre">
+        <h2 className="mb-4 text-sm font-bold">Offre</h2>
+        <ul className="space-y-2.5"><li><a className={linkClass} href="/#tracking">Véhicules accidentés</a></li><li><a className={linkClass} href="/#tracking">Commander un véhicule</a></li></ul>
+      </nav>
+      <nav aria-label="Le garage">
+        <h2 className="mb-4 text-sm font-bold">Le garage</h2>
+        <ul className="space-y-2.5"><li><a className={linkClass} href="/#tracking-result">À propos</a></li><li><a className={linkClass} href="/#tracking-result">Services</a></li><li><a className={linkClass} href="/#tracking-result">FAQ</a></li><li><a className={linkClass} href="/#tracking-result">Contact</a></li></ul>
+      </nav>
+      <nav aria-label="Informations">
+        <h2 className="mb-4 text-sm font-bold">Informations</h2>
+        <ul className="space-y-2.5"><li><a className={linkClass} href="/#tracking-result">Politique de confidentialité</a></li><li><a className={linkClass} href="/#tracking-result">Mentions légales</a></li></ul>
+      </nav>
+    </div>
+    <div className="border-t border-[#dedfe1]"><div className="mx-auto max-w-[1186px] px-5 py-5 text-[12px] text-[#777b82] lg:px-0">© {new Date().getFullYear()} Laurent Crash Autos. Tous droits réservés.</div></div>
+  </footer>;
+}
 
 function Feature({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) { return <div className="rounded-2xl border border-black/10 bg-white p-6 shadow-sm"><div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff0f0] text-[#e21c23]">{icon}</div><h3 className="font-display text-lg font-bold">{title}</h3><p className="mt-2 text-sm leading-6 text-black/55">{text}</p></div>; }
 function TrackingCard({ shipment, events, onCopy }: { shipment: Shipment; events: Event[]; onCopy: (code: string) => void }) {
