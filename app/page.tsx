@@ -68,6 +68,17 @@ export function Home({ adminOnly = false }: { adminOnly?: boolean }) {
 
   useEffect(() => { if (!adminOnly || adminAuthenticated) void loadData(); }, [adminOnly, adminAuthenticated]);
 
+  useEffect(() => {
+    if (adminOnly || !selected) return;
+    const shipmentId = selected.id;
+    const refreshStatus = async () => {
+      const { data } = await supabase.from('shipments').select('current_status, updated_at').eq('id', shipmentId).maybeSingle();
+      if (data) setSelected((current) => current?.id === shipmentId ? { ...current, current_status: data.current_status, updated_at: data.updated_at } : current);
+    };
+    const interval = window.setInterval(() => { void refreshStatus(); }, 8000);
+    return () => window.clearInterval(interval);
+  }, [adminOnly, selected?.id]);
+
   const logIn = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setAuthError('');
@@ -153,7 +164,46 @@ export function Home({ adminOnly = false }: { adminOnly?: boolean }) {
 export default Home;
 
 function Feature({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) { return <div className="rounded-2xl border border-black/10 bg-white p-6 shadow-sm"><div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff0f0] text-[#e21c23]">{icon}</div><h3 className="font-display text-lg font-bold">{title}</h3><p className="mt-2 text-sm leading-6 text-black/55">{text}</p></div>; }
-function TrackingCard({ shipment, events, onCopy }: { shipment: Shipment; events: Event[]; onCopy: (code: string) => void }) { return <div className="animate-rise overflow-hidden rounded-[28px] border border-black/10 bg-white shadow-xl shadow-black/5"><div className="border-b border-black/10 bg-[#111214] p-6 text-white sm:p-8"><div className="flex flex-wrap items-start justify-between gap-4"><div><div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.18em] text-[#ff595f]"><span className="live-pulse h-2 w-2 rounded-full bg-[#e21c23]" /> Suivi en direct</div><h2 className="font-display mt-3 text-3xl font-bold">{shipment.vehicle_label}</h2><p className="mt-2 text-sm text-white/50">Dossier {shipment.reference} · {shipment.customer_name}</p></div><div className="rounded-xl bg-white/10 px-4 py-3 text-right"><p className="text-[10px] uppercase tracking-widest text-white/45">Code de suivi</p><button onClick={() => onCopy(shipment.tracking_code)} className="mt-1 flex items-center gap-2 font-mono text-sm font-bold text-white hover:text-[#ff595f]">{shipment.tracking_code}<Copy size={14} /></button></div></div><div className="mt-8 grid gap-4 sm:grid-cols-3"><Info label="Départ" value={shipment.origin} /><Info label="Destination" value={shipment.destination} /><Info label="Livraison estimée" value={shipment.eta ?? 'À confirmer'} /></div></div><div className="p-6 sm:p-8"><div className="mb-6 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[.17em] text-black/40">Historique du transport</p><h3 className="font-display mt-1 text-xl font-bold">Les dernières nouvelles</h3></div><span className="rounded-full bg-[#fff0f0] px-3 py-1.5 text-xs font-bold text-[#c9161d]">{shipment.current_status}</span></div><div className="space-y-0">{events.length ? events.map((event, index) => <div className="relative flex gap-4 pb-7" key={event.id}><div className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-4 border-white bg-[#e21c23] text-white shadow-sm">{event.is_completed ? <Check size={14} strokeWidth={3} /> : <Truck size={14} />}</div>{index < events.length - 1 && <div className="absolute left-[15px] top-8 h-full w-0.5 bg-[#e21c23]/20" />}<div className="min-w-0 pt-0.5"><div className="flex flex-wrap items-baseline gap-x-3 gap-y-1"><h4 className="font-bold">{event.title}</h4><span className="text-xs text-black/40">{formatDate(event.occurred_at)}</span></div><p className="mt-1 flex items-center gap-1 text-sm font-medium text-[#e21c23]"><MapPin size={13} /> {event.location}</p>{event.description && <p className="mt-1 text-sm leading-6 text-black/55">{event.description}</p>}</div></div>) : <p className="text-sm text-black/50">Le parcours sera bientôt renseigné par notre équipe.</p>}</div></div></div>; }
+function TrackingCard({ shipment, events, onCopy }: { shipment: Shipment; events: Event[]; onCopy: (code: string) => void }) {
+  const statusIndex = Math.max(0, statusOptions.indexOf(shipment.current_status));
+  const progress = statusIndex === 0 ? 4 : statusIndex === statusOptions.length - 1 ? 96 : 4 + (statusIndex / (statusOptions.length - 1)) * 92;
+
+  return <div className="animate-rise overflow-hidden rounded-[28px] border border-black/10 bg-white shadow-xl shadow-black/5">
+    <div className="border-b border-black/10 bg-[#111214] p-6 text-white sm:p-8">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.18em] text-[#ff595f]"><span className="live-pulse h-2 w-2 rounded-full bg-[#e21c23]" /> Suivi en direct</div>
+          <h2 className="font-display mt-3 text-3xl font-bold">{shipment.vehicle_label}</h2>
+          <p className="mt-2 text-sm text-white/50">Dossier {shipment.reference} · {shipment.customer_name}</p>
+        </div>
+        <div className="rounded-xl bg-white/10 px-4 py-3 text-right">
+          <p className="text-[10px] uppercase tracking-widest text-white/45">Code de suivi</p>
+          <button onClick={() => onCopy(shipment.tracking_code)} className="mt-1 flex items-center gap-2 font-mono text-sm font-bold text-white hover:text-[#ff595f]">{shipment.tracking_code}<Copy size={14} /></button>
+        </div>
+      </div>
+      <div className="mt-8 grid gap-4 sm:grid-cols-3"><Info label="Départ" value={shipment.origin} /><Info label="Destination" value={shipment.destination} /><Info label="Livraison estimée" value={shipment.eta ?? 'À confirmer'} /></div>
+      <div className="mt-8 rounded-2xl border border-white/10 bg-white/[.05] p-4 sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-bold uppercase tracking-[.15em] text-white/50">Progression du transport</p>
+          <span className="rounded-full bg-[#e21c23]/15 px-3 py-1 text-xs font-bold text-[#ff777b]">{shipment.current_status}</span>
+        </div>
+        <div className="relative mx-2 mt-8 h-2 rounded-full bg-white/15" role="progressbar" aria-label="Progression du transport" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(statusIndex / (statusOptions.length - 1) * 100)}>
+          <div className="absolute inset-y-0 left-0 rounded-full bg-[#e21c23] transition-[width] duration-1000 ease-out motion-reduce:transition-none" style={{ width: `${progress}%` }} />
+          {statusOptions.map((status, index) => {
+            const position = 4 + (index / (statusOptions.length - 1)) * 92;
+            return <span key={status} aria-hidden="true" className={`absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 transition-colors duration-500 ${index <= statusIndex ? 'border-[#ff777b] bg-[#e21c23]' : 'border-[#77787a] bg-[#292a2c]'}`} style={{ left: `${position}%` }} />;
+          })}
+          <span className="shipment-marker absolute top-1/2 z-10 -translate-x-1/2 -translate-y-[85%] text-[#ff555b]" style={{ left: `${progress}%` }} aria-hidden="true"><Truck size={25} fill="#111214" strokeWidth={2.5} /></span>
+        </div>
+        <div className="mt-4 flex justify-between gap-3 text-[11px] font-medium text-white/45"><span className="max-w-[45%] truncate">{shipment.origin}</span><span className="max-w-[45%] truncate text-right">{shipment.destination}</span></div>
+      </div>
+    </div>
+    <div className="p-6 sm:p-8">
+      <div className="mb-6 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[.17em] text-black/40">Historique du transport</p><h3 className="font-display mt-1 text-xl font-bold">Les dernières nouvelles</h3></div><span className="rounded-full bg-[#fff0f0] px-3 py-1.5 text-xs font-bold text-[#c9161d]">{shipment.current_status}</span></div>
+      <div className="space-y-0">{events.length ? events.map((event, index) => <div className="relative flex gap-4 pb-7" key={event.id}><div className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-4 border-white bg-[#e21c23] text-white shadow-sm">{event.is_completed ? <Check size={14} strokeWidth={3} /> : <Truck size={14} />}</div>{index < events.length - 1 && <div className="absolute left-[15px] top-8 h-full w-0.5 bg-[#e21c23]/20" />}<div className="min-w-0 pt-0.5"><div className="flex flex-wrap items-baseline gap-x-3 gap-y-1"><h4 className="font-bold">{event.title}</h4><span className="text-xs text-black/40">{formatDate(event.occurred_at)}</span></div><p className="mt-1 flex items-center gap-1 text-sm font-medium text-[#e21c23]"><MapPin size={13} /> {event.location}</p>{event.description && <p className="mt-1 text-sm leading-6 text-black/55">{event.description}</p>}</div></div>) : <p className="text-sm text-black/50">Le parcours sera bientôt renseigné par notre équipe.</p>}</div>
+    </div>
+  </div>;
+}
 function Info({ label, value }: { label: string; value: string }) { return <div className="border-l-2 border-[#e21c23] pl-3"><p className="text-[10px] font-bold uppercase tracking-widest text-white/40">{label}</p><p className="mt-1 text-sm font-semibold">{value}</p></div>; }
 
 function AdminLogin({ checked, password, setPassword, error, onSubmit }: { checked: boolean; password: string; setPassword: (value: string) => void; error: string; onSubmit: (event: React.FormEvent<HTMLFormElement>) => void }) { return <section className="mx-auto flex min-h-[calc(100vh-76px)] max-w-[1320px] items-center justify-center px-5 py-12"><form onSubmit={onSubmit} className="w-full max-w-md rounded-2xl border border-black/10 bg-white p-7 shadow-xl sm:p-9"><div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-[#fff0f0] text-[#e21c23]"><LockKeyhole size={22} /></div><p className="text-xs font-bold uppercase tracking-[.18em] text-[#e21c23]">Espace sécurisé</p><h1 className="font-display mt-2 text-3xl font-bold">Connexion admin</h1><p className="mt-2 text-sm leading-6 text-black/55">Saisissez le mot de passe administrateur pour gérer les transports.</p><label htmlFor="admin-password" className="mb-2 mt-6 block text-xs font-bold text-black/60">Mot de passe</label><input id="admin-password" type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} className="w-full rounded-lg border border-black/15 bg-[#fafaf8] px-3 py-3 text-sm outline-none focus:border-[#e21c23] focus:ring-2 focus:ring-[#e21c23]/10" />{error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}<button disabled={!checked} className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-[#e21c23] px-5 py-3 text-sm font-bold text-white hover:bg-[#c9161d] disabled:opacity-60">{checked ? 'Se connecter' : 'Vérification…'}</button></form></section>; }
